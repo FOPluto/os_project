@@ -6,6 +6,10 @@ add_definitions(-std=c++17)
 cmake_minimum_required(VERSION 2.8)
 project( os_project )
 
+# 加入opencv库
+find_package( OpenCV REQUIRED )
+include_directories(${OPENCV_INCLUDE_DIR})  
+
 find_package(OpenGL REQUIRED)  
 include_directories(${OPENGL_INCLUDE_DIR})  
 
@@ -14,6 +18,6 @@ include_directories(${GLUT_INCLUDE_DIR})
 
 add_executable( os_project src/main.cpp src/threadManager.cpp )
 
-target_link_libraries(os_project ${OPENGL_LIBRARY} ${FREEGLUT_LIBRARY} ${OPENGL_LIBRARY})
+target_link_libraries(os_project ${OPENGL_LIBRARY} ${FREEGLUT_LIBRARY} ${OPENGL_LIBRARY} ${OpenCV_LIBS} )
 
 include_directories(/root/os_project/include)

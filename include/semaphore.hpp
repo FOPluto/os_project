@@ -7,11 +7,11 @@
 #include "project.h"
 
 class semaphore {
-    
+    // 数量，资源可用的数量
     int count;
-    
+    // 互斥锁
     std::mutex mtk;
-    
+    // 用于唤醒线程
     std::condition_variable cv;
     
 public:

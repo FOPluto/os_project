@@ -9,9 +9,23 @@ void ThreadManager::Produce() {
 
 void ThreadManager::Consume() {
     puts("cc");
-
 }
 
 void ThreadManager::SubConsume() {
     puts("dd");
+}
+
+void ThreadManager::DrawProcess() {
+
+}
+
+int ThreadManager::init() {
+
+    puts("---------Initialize Finished---------");
+    return 0;
+}
+
+void ThreadManager::run() {
+    puts("------------start running------------");
+
 }
