@@ -12,7 +12,7 @@ include_directories(${OPENGL_INCLUDE_DIR})
 find_package(GLUT REQUIRED)  
 include_directories(${GLUT_INCLUDE_DIR})  
 
-add_executable( os_project src/main.cpp )
+add_executable( os_project src/main.cpp src/threadManager.cpp )
 
 target_link_libraries(os_project ${OPENGL_LIBRARY} ${FREEGLUT_LIBRARY} ${OPENGL_LIBRARY})
 
