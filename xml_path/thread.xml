@@ -6,7 +6,7 @@
 <num_sub_consume>2</num_sub_consume><!--次级消费者数量-->
 <size_buffer>2</size_buffer><!--生产者缓冲区大小-->
 <size_sub_buffer>2</size_sub_buffer><!--消费者缓冲区大小-->
-<speed_produce></speed_produce><!--生产者速度-->
+<speed_produce>3</speed_produce><!--生产者速度-->
 <speed_consume>2</speed_consume><!--消费者速度-->
 <speed_sub_consume>2</speed_sub_consume><!--次级消费者速度-->
 <path>./save.keli</path><!--默认读取文件。初始化上次的-->

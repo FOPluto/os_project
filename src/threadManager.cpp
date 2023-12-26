@@ -37,12 +37,21 @@ int ThreadManager::init() {
     fr["size_buffer"] >> this->size_buffer;
     fr["size_sub_buffer"] >> this->size_sub_buffer;
     fr["size_buffer"] >> this->size_buffer;
-
+    puts("--------Reading data Finished--------");
+    // 创建对应数量的进程
+    for(int i = 0;i < this->num_produce;i++) {
+        this->produce_list[i] = new std::thread(ThreadManager::Produce);
+    }
+    for(int i = 0;i < this->num_consume;i++) {
+        this->consume_list[i] = new std::thread(ThreadManager::Consume);
+    }
+    for(int i = 0;i < this->num_sub_consume;i++) {
+        this->sub_consume_list[i] = new std::thread(ThreadManager::SubConsume);
+    }
     puts("---------Initialize Finished---------");
     return 0;
 }
 
 void ThreadManager::run() {
     puts("------------start running------------");
-
 }

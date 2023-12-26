@@ -8,7 +8,6 @@ project( os_project )
 
 # 加入opencv库
 find_package( OpenCV REQUIRED )
-include_directories(${OPENCV_INCLUDE_DIR})  
 
 find_package(OpenGL REQUIRED)  
 include_directories(${OPENGL_INCLUDE_DIR})  

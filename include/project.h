@@ -26,6 +26,6 @@ struct object
     int type; // 类型，用于区分第一个缓冲区还是第二个缓冲区
     int idx; // 所处的索引位置
     double data; // 数据
-    Mat image; // 输入的图像
+    cv::Mat image; // 输入的图像
     /* data */
 };
