@@ -1,15 +1,21 @@
 {
   "configurations": [
     {
-      "name": "windows-gcc-x64",
+      "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/include/**",
+        "${workspaceFolder}/include",
+        "/root/os_project/include",
+        "/usr/include/x86_64-linux-gnu/sys",
+        ""
       ],
       "defines": [],
-      "compilerPath": "C:/mingw64/bin/gcc.exe",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
-      "intelliSenseMode": "windows-gcc-x64"
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu17",
+      "cppStandard": "gnu++14",
+      "intelliSenseMode": "linux-gcc-x64",
+      "configurationProvider": "go2sh.cmake-integration"
     }
   ],
   "version": 4
