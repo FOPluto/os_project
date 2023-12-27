@@ -2,6 +2,9 @@
  * @brief 用于包含需要的库，并且定义全局的变量
 */
 
+#ifndef PROJECT_H
+#define PROJECT_H
+
 #include <GL/glut.h>
 #include <vector>
 #include <ctime>
@@ -12,11 +15,14 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <time.h>
 
 // 最大列表长度
 #define MAX_LIST_SIZE 1000
 // 默认读取的配置文件
-#define DEFUALT_XML_PATH "../xml_path/thread.xml"
+#define DEFUALT_XML_PATH "/root/os_project/xml_path/thread.xml"
+// BUffer最大长度
+#define MAX_BUFFER_SIZE 100
 
 using namespace cv;
 using namespace std;
@@ -24,8 +30,11 @@ using namespace std;
 struct object
 {
     int type; // 类型，用于区分第一个缓冲区还是第二个缓冲区
-    int idx; // 所处的索引位置
+    size_t index; // 索引
     double data; // 数据
     cv::Mat image; // 输入的图像
     /* data */
 };
+
+
+#endif // !PROJECT_H

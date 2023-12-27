@@ -6,7 +6,6 @@
 #ifndef THREADMANAGER_H
 #define THREADMANAGER_H
 
-#include "project.h"
 #include "semaphore.hpp"
 
 /**
@@ -56,8 +55,15 @@ class ThreadManager{
      * 两个缓冲区 
      * 生产者消费者用的缓冲区、消费者和次级消费者用的缓冲区
     */
-    object* buffer, sub_buffer;
-
+    ItemRepository* mat_repository, *data_repository;
+    /**
+     * 消费者每次运行时间，和速度成反比
+    */
+    float produce_time;
+    /**
+     * 次级消费者每次运行时间，和速度成反比 
+    */
+    float sub_consume_time;
     public:
     /**
      * 初始化函数
@@ -75,7 +81,7 @@ class ThreadManager{
     /**
      * 生产者线程函数
     */
-    void Produce();
+    void Produce(std::string path);
     /**
      * 消费者线程函数
     */

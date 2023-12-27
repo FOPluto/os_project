@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <!--2022ysu-eagle 多线程部分参数调整-->
 <opencv_storage>
-<num_produce>5</num_produce><!--生产者数量-->
+<num_produce>2</num_produce><!--生产者数量-->
 <num_consume>1</num_consume><!--消费者数量-->
-<num_sub_consume>2</num_sub_consume><!--次级消费者数量-->
+<num_sub_consume>10</num_sub_consume><!--次级消费者数量-->
 <size_buffer>2</size_buffer><!--生产者缓冲区大小-->
 <size_sub_buffer>2</size_sub_buffer><!--消费者缓冲区大小-->
-<speed_produce>3</speed_produce><!--生产者速度-->
-<speed_consume>2</speed_consume><!--消费者速度-->
-<speed_sub_consume>2</speed_sub_consume><!--次级消费者速度-->
+<time_produce>10</time_produce><!--生产者时间，单位ms-->
+<time_consume>10</time_consume><!--消费者时间，未用到-->
+<time_sub_consume>10</time_sub_consume><!--次级消费者时间，单位ms-->
 <path>./save.keli</path><!--默认读取文件。初始化上次的-->
 
 </opencv_storage>

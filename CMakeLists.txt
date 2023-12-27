@@ -1,13 +1,16 @@
 set( CMAKE_BUILD_TYPE "Debug" )
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-add_definitions(-std=c++17) 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+
+add_definitions(-std=c++14) 
 
 cmake_minimum_required(VERSION 2.8)
 project( os_project )
 
-# 加入opencv库
-find_package( OpenCV REQUIRED )
+if (POLICY CMP0072)
+  set(OpenGL_GL_PREFERENCE LEGACY)
+endif()
 
 find_package(OpenGL REQUIRED)  
 include_directories(${OPENGL_INCLUDE_DIR})  
@@ -15,8 +18,20 @@ include_directories(${OPENGL_INCLUDE_DIR})
 find_package(GLUT REQUIRED)  
 include_directories(${GLUT_INCLUDE_DIR})  
 
-add_executable( os_project src/main.cpp src/threadManager.cpp )
+# 加入opencv库
+find_package( OpenCV REQUIRED )
 
-target_link_libraries(os_project ${OPENGL_LIBRARY} ${FREEGLUT_LIBRARY} ${OPENGL_LIBRARY} ${OpenCV_LIBS} )
+set(BOOST_THREAD_LIBRARY boost_thread -pthread)
+
+add_executable( os_project src/main.cpp src/threadManager.cpp src/semaphore.cpp )
 
 include_directories(/root/os_project/include)
+
+target_link_libraries( os_project 
+            ${OpenCV_LIBS}
+            ${OPENGL_LIBRARY} 
+            ${FREEGLUT_LIBRARY} 
+            ${OPENGL_LIBRARY} 
+            libpthread.so
+            )
+
