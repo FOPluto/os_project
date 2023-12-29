@@ -25,6 +25,7 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat& frame, int t
     // 获取当前线程id
     std::thread::id id = std::this_thread::get_id();
     std::string res = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
+    obj->produce_id = res;
     cv::imshow(res, frame);
     cv::waitKey(1);
 
@@ -59,9 +60,9 @@ object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* det
         ir->emptyL->signal();
         return nullptr;
     }
-    // 如果有图片，那么传入并且识别
-    vector<cv::Point2f> detect_res = detector->DetectObjectArmor(item->image);
-    // 处理输出结果 通过item得到最后的识别结果res_item
+    cv::Mat src_image;
+    item->image.copyTo(src_image);
+    std::string produce_id = std::string(item->produce_id);
     ir->buffer[ir->out] = nullptr;
     item->index = ir->out;
     ir->out = (ir->out + 1) % ir->BUFFER_SIZE;
@@ -69,6 +70,11 @@ object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* det
 
     ir->mtxL->signal();
     ir->emptyL->signal();
+
+    // 如果有图片，那么传入并且识别
+    vector<cv::Point2f> detect_res = detector->DetectObjectArmor(src_image, produce_id);
+    // 处理输出结果 通过item得到最后的识别结果res_item
+
         
     object* res_item = new object();
     res_item->type = 2; res_item->data = detect_res;

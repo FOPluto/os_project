@@ -239,12 +239,12 @@ void ArmorDetector::Show(double y_err,double p_err)
       out1<<to_string(y_err)+","+to_string(p_err)<<endl;
       out1.close();
 }
-void ArmorDetector::Show(){
+void ArmorDetector::Show(std::string& produce_id){
 #ifdef DEBUG
     // 获取当前线程id
     std::thread::id id = std::this_thread::get_id();
     std::string str = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
-    cv::imshow(string("消费者处理") + str,src_image_);
+    cv::imshow(string("消费者处理") + produce_id,src_image_);
     waitKey(1);
 #endif
 }
@@ -265,13 +265,13 @@ void ArmorDetector::Yolov2Res(cv::Mat &frame){
  * @brief 在初始化之后，每一次加载图片之后就执行一次识别过程，返回最终中心点坐标
 */
 #include<thread>
-vector<Point2f>& ArmorDetector::DetectObjectArmor(cv::Mat& frame){
+vector<Point2f>& ArmorDetector::DetectObjectArmor(cv::Mat& frame, std::string& produce_id){
     // old detector 老视觉识别已经弃用，现在用的深度学习识别
-    frame.copyTo(src_image_);
+    src_image_ = cv::Mat::zeros(frame.size(), frame.type());
     Yolov2Res(frame);                   // 调用yolo模型
     ScreenArmor();                 // 使用原来的装甲板筛选代码
     ClearAll();                    // 清除历史工作数据
-    Show();
+    Show(produce_id);
     return target_armor_point_set; // 返回中心点的信息
 }
 

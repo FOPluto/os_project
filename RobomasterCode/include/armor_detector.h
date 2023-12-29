@@ -27,13 +27,13 @@ class ArmorDetector
 public:
     friend cv::VideoWriter;
     ArmorDetector();
-    vector<cv::Point2f>& DetectObjectArmor(cv::Mat& frame);
+    vector<cv::Point2f>& DetectObjectArmor(cv::Mat& frame, std::string& produce_id);
     void Yolov2Res(cv::Mat &frame);
     void InitArmor(std::string xml_path, std::string bin_path);
 
     void ScreenArmor();
     void ClearAll();
-    void Show();
+    void Show(std::string &produce_id);
     void Show(double y_err,double p_err);
     void baocun();
     void PerspectiveTransformation();

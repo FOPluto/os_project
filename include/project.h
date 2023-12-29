@@ -16,7 +16,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <time.h>
-
+#include <unordered_map>
 // 最大列表长度
 #define MAX_LIST_SIZE 1000
 // 默认读取的配置文件
@@ -31,8 +31,9 @@ struct object
 {
     int type; // 类型，用于区分第一个缓冲区还是第二个缓冲区
     size_t index; // 索引
-    vector<cv::Point2f> data; // 数据
+    std::vector<cv::Point2f> data; // 数据
     cv::Mat image; // 输入的图像
+    std::string produce_id; // 所属的名称
     /* data */
 };
 
