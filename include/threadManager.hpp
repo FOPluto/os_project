@@ -64,11 +64,28 @@ class ThreadManager{
      * 次级消费者每次运行时间，和速度成反比 
     */
     float sub_consume_time;
+    /**
+     * yolov5模型识别器
+    */
+    ArmorDetector *yolo_detector;
+    /**
+     * 数据处理器角度解算器
+     * 
+    */
+    AngleSolver *solver;
+    /**
+     * 模型路径
+    */
+    std::string bin_path, xml_path;
+    /**
+     * 视频源id
+    */
+    std::vector<std::string> source_name_list;
     public:
     /**
      * 初始化函数
     */
-    int init();
+    int init(int argc, char** argv);
     /**
      * 执行函数
     */
@@ -78,6 +95,10 @@ class ThreadManager{
     */
     int pause();
     private:
+    /**
+     * 初始化绘制函数
+    */
+    void init_draw(int argc, char** argv);
     /**
      * 生产者线程函数
     */
@@ -100,7 +121,7 @@ class ThreadManager{
     /**
      * 添加生产者
     */
-    int addProduce();
+    int addProduce(std::string path);
     /**
      * 添加消费者
     */

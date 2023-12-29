@@ -31,7 +31,7 @@ struct object
 {
     int type; // 类型，用于区分第一个缓冲区还是第二个缓冲区
     size_t index; // 索引
-    double data; // 数据
+    vector<cv::Point2f> data; // 数据
     cv::Mat image; // 输入的图像
     /* data */
 };

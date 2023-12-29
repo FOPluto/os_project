@@ -4,7 +4,7 @@
  * @details 通过openvino实现调用模型，加速模型推理
 */
 
-#include "DeepLearning/yolov5.h"
+#include "yolov5.h"
 
 #define DEBUG
 #define WINDOW_NAME "res_show"
@@ -16,8 +16,8 @@ float sigmoid_function(float a)
 }
 
 Yolov5::Yolov5(){
-    this->m_xml_path = "../model/best.xml"; // 默认模型路径一般不用，在初始化中被覆盖
-    this->m_bin_path = "../model/best.bin";
+    this->m_xml_path = "/root/os_project/model/model/opt-0625-001.xml"; // 默认模型路径一般不用，在初始化中被覆盖
+    this->m_bin_path = "/root/os_project/model/model/opt-0625-001.bin";
 }
 
 // create function to define some element, change the xml some time
@@ -83,7 +83,7 @@ void Yolov5::read_network(){
     }
 
     // 指定GPU插件名称
-    std::string device_name = "GPU";
+    std::string device_name = "CPU";
     this->m_executable_network = m_ie.LoadNetwork(network, device_name);
 }
 
@@ -370,12 +370,11 @@ void Yolov5::draw_res(){
 }
 
 
-vector<DetectRect>& Yolov5::detect_yolov5(cv::Mat& src_){
-    this->m_src_image = src_;
-//    this->m_src_image.copyTo(m_src_copy_image);
-//    this->infer2res(m_src_copy_image);
+vector<DetectRect>& Yolov5::detect_yolov5(cv::Mat src_){
+    src_.copyTo(m_src_copy_image);
+    // this->infer2res(m_src_copy_image);
     // 优化改成
-    return infer2res(m_src_image); // 添加到qt项目中不需要copy
+    return infer2res(src_); // 添加到qt项目中不需要copy
 }
 
 

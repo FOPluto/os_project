@@ -5,6 +5,8 @@
 #define SEMAPHORE_H
 
 #include "project.h"
+#include "armor_detector.h"
+#include "angle_solver.h"
 
 class semaphore {
     // 数量，资源可用的数量
@@ -62,9 +64,16 @@ struct ItemRepository {
     }
 };
 
-void ProduceItem(ItemRepository *ir, object *item, int time);
+int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat &frame, int time);
 
-object *ConsumeItem(ItemRepository *ir, int time);
+object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time);
 
+vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
+
+void display();
+
+void reshape(int width, int height);
+
+void keyboard(unsigned char key, int x, int y);
 
 #endif // !SEMAPHORE_H

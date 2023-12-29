@@ -23,8 +23,8 @@
 #define YOLOV5
 
 
-#include "Main/headfiles.h"
-#include "Timer/Timer.h"
+#include "headfiles.h"
+#include "Timer.h"
 
 // #define DEBUG // 调试模式
 
@@ -52,7 +52,7 @@ struct DetectRect{
     Systime time;                              // 时间戳
 };
 class Yolov5{
-    private:
+    public:
 
     cv::Mat m_src_image;
     cv::Mat m_src_copy_image;
@@ -88,7 +88,7 @@ class Yolov5{
 
     void init_yolov5_detector();        // init detector class
 
-    vector<DetectRect>& detect_yolov5(cv::Mat& src_);   // detect function
+    vector<DetectRect>& detect_yolov5(cv::Mat src_);   // detect function
 
     void show_res();
 

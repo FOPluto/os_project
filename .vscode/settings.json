@@ -64,6 +64,8 @@
     "typeinfo": "cpp",
     "valarray": "cpp",
     "variant": "cpp",
-    "queue": "cpp"
+    "queue": "cpp",
+    "forward_list": "cpp",
+    "unordered_set": "cpp"
   }
 }
