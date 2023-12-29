@@ -15,6 +15,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <X11/Xlib.h>
 #include <time.h>
 #include <unordered_map>
 // 最大列表长度
@@ -34,7 +35,14 @@ struct object
     std::vector<cv::Point2f> data; // 数据
     cv::Mat image; // 输入的图像
     std::string produce_id; // 所属的名称
+    float r{}, g{}, b{}; // 之后画球的时候用的颜色
     /* data */
+    explicit object() {
+        r = rand() % 10 / 10.0;
+        g = rand() % 10 / 10.0;
+        b = rand() % 10 / 10.0;
+    }
+
 };
 
 

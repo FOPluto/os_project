@@ -15,11 +15,8 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat& frame, int t
     auto start_time = std::chrono::system_clock::now();
     
     capture >> frame;
-    if (frame.empty()) {
-        ir->mtxL->signal();
-        ir->fullL->signal();
-        return -1;
-    }
+    // if (!frame.empty()) {
+    // }
     object* obj = new object();
     obj->type = 1; obj->image = frame;
     // 获取当前线程id
@@ -125,76 +122,6 @@ vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver *solver, int time)
     return solver_res; // 返回产品.
 }
 
-// 展示用的（可视化的一些函数）之后封装到类里面
-// 视角位置
-float cameraX = 0.0f;
-float cameraY = 0.0f;
-float cameraZ = 5.0f;
 
-// 视角朝向
-float lookX = 0.0f;
-float lookY = 0.0f;
-float lookZ = -1.0f;
-
-// 地板大小
-float floorSize = 10.0f;
-
-void display() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
-
-    // 设置视角
-    gluLookAt(cameraX, cameraY, cameraZ, cameraX + lookX, cameraY + lookY, cameraZ + lookZ, 0.0f, 1.0f, 0.0f);
-
-    // 绘制地板
-    glBegin(GL_QUADS);
-    glColor3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(-floorSize, 0.0f, -floorSize);
-    glVertex3f(-floorSize, 0.0f, floorSize);
-    glVertex3f(floorSize, 0.0f, floorSize);
-    glVertex3f(floorSize, 0.0f, -floorSize);
-    glEnd();
-
-    // 刷新绘制
-    glFlush();
-    glutSwapBuffers();
-}
-
-void reshape(int width, int height) {
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60.0, (double)width / (double)height, 1.0, 100.0);
-    glMatrixMode(GL_MODELVIEW);
-}
-
-void keyboard(unsigned char key, int x, int y) {
-    // 键盘事件处理
-    switch (key) {
-        case 'w':
-            cameraX += lookX * 0.1;
-            cameraY += lookY * 0.1;
-            cameraZ += lookZ * 0.1;
-            break;
-        case 's':
-            cameraX -= lookX * 0.1;
-            cameraY -= lookY * 0.1;
-            cameraZ -= lookZ * 0.1;
-            break;
-        case 'a':
-            // 左转
-            lookX += 0.1;
-            break;
-        case 'd':
-            // 右转
-            lookX -= 0.1;
-            break;
-        case 'q':
-            exit(0);
-            break;
-    }
-
-    glutPostRedisplay();
-}
 
 #endif // !DO_ITEM_FUNCTION

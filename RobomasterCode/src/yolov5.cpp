@@ -90,8 +90,6 @@ void Yolov5::read_network(){
 
 
 
-
-
 bool Yolov5::is_allready()
 {
     if(m_input_info.size()>0 && m_output_info.size()>0)
@@ -102,7 +100,7 @@ bool Yolov5::is_allready()
 
 // 清除历史工作
 void Yolov5::clear_work(){
-    this->res_rects.clear();
+    if(this->res_rects.size()) this->res_rects.clear();
 }
 /**
  * @brief 主要模型推理的函数

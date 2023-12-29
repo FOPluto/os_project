@@ -132,8 +132,6 @@ void ArmorDetector::ScreenArmor(){
                         if(ratio2 < hero_zjb_ratio_max && ratio2 > hero_zjb_ratio_min)score2 += score_of_hero;
 
                         rect1.area > rect2.area ? score1 += score_of_area : score2+score_of_area;
-                        (get_dis((record_history_arr.end()-1)->cen_p,rect1.cen_p)<get_dis((record_history_arr.end()-1)->cen_p,rect2.cen_p))?score1+=score_of_last:score2+=score_of_last;
-
                         return score1 > score2;
                     });
                }else if(hero_priority == 1){ // 优先历史帧
@@ -200,7 +198,8 @@ void ArmorDetector::ScreenArmor(){
 
         //记录输出结果，用于历史帧判断
         record_history_arr.emplace_back(match_armors_[id]);
-        while(record_history_arr.size()>record_history_num)record_history_arr.erase(record_history_arr.begin());
+        // gdb调试出来的一个错误 bt可以查看堆栈
+        while(record_history_arr.size()>record_history_num && record_history_arr.size() > 0) record_history_arr.erase(record_history_arr.begin());
 
         target_armor_point_set.clear();
         target_armor_point_set.push_back(lu);

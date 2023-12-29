@@ -3,37 +3,47 @@
 */
 #include "threadManager.hpp"
 
-void ThreadManager::Produce(std::string path) {
-    int base_time = (int)this->produce_time * 1e3;
+void ThreadManager::Produce(std::string path, std::string name, int speed) {
+    // 初始化速度
+    std::thread::id id = std::this_thread::get_id();
+    std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
+    this->speed_map[current_process_id] = speed * 1e3;
     cout << path << endl;
     cv::VideoCapture capture = cv::VideoCapture(path);
     Mat frame;
     if(!capture.isOpened()){
-        cout << "open video error" << endl;
+        cout << "视频读取失败，请检查路径" << endl;
         return;
     }
     puts("--------Produce Start Running--------");
     while(1) {
-        if(ProduceItem(this->mat_repository, capture, frame, base_time) == -1) break;
+        if(ProduceItem(this->mat_repository, capture, frame, this->speed_map[current_process_id]) == -1) break;
     }
+    puts("视频读取完毕，线程退出");
 }
 
 void ThreadManager::Consume() {
     puts("--------Consume Start Running--------");
-    while(1) { // 消费者无需控制速度
-        object* result = ConsumeItem(this->mat_repository, this->data_repository, this->yolo_detector, 0);
+    ArmorDetector * detector = new ArmorDetector();
+    detector->InitArmor(this->xml_path, this->bin_path);
+    while(1) { // 消费者无需控制速度，所以设置为0
+        object* result = ConsumeItem(this->mat_repository, this->data_repository, detector, 500);
         auto res = result->data;
         puts("{");
         for(int i = 0;i < 4;i++) printf("\tPoint{%f, %f}\n", res[i].x, res[i].y);
         puts("}");
     }
+    delete(detector);
 }
 
-void ThreadManager::SubConsume() {
+void ThreadManager::SubConsume(int speed) {
     puts("------SubConsume Start Running-------");
-    int base_time = (int)this->sub_consume_time * 1e3;
+    // 初始化速度
+    std::thread::id id = std::this_thread::get_id();
+    std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
+    this->speed_map[current_process_id] = speed * 1e3;
     while(1) {
-        vector<double> data_result = SubConsumeItem(this->data_repository, this->solver, base_time);
+        vector<double> data_result = SubConsumeItem(this->data_repository, this->solver, this->speed_map[current_process_id]);
         printf("result {%f, %f, %f}\n", data_result[0], data_result[1], data_result[2]);
     }
 }
@@ -46,15 +56,10 @@ void ThreadManager::DrawProcess() {
 // 初始化绘制函数
 void ThreadManager::init_draw(int argc, char** argv) {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(800, 600);
-    glutCreateWindow("用户界面");
-    
-    glEnable(GL_DEPTH_TEST);
-
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(keyboard);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+    drawInit(this->produce_list, this->consume_list, this->sub_consume_list,
+            this->num_produce, this->num_consume, this->num_sub_consume, 
+            this->mat_repository, this->data_repository, this->speed_map);
 }
 
 
@@ -93,32 +98,33 @@ int ThreadManager::init(int argc, char** argv) {
     cout << "size_buffer: " << this->size_buffer << endl;
     fr["model_bin_path"] >> this->bin_path;
     fr["model_xml_path"] >> this->xml_path;
-    // 初始化模型
-    this->yolo_detector = new ArmorDetector();
-    this->yolo_detector->InitArmor(this->xml_path, this->bin_path);
     // 初始化角度解算器
     this->solver = new AngleSolver();
     this->solver->InitAngle();
+
     puts("--------Reading data Finished--------");
     // new两个buffer区域，这个是两个结构体，用于管理buffer区域
     this->mat_repository = new ItemRepository(0, size_buffer);
     this->data_repository = new ItemRepository(0, size_sub_buffer);
     // 创建对应数量的进程
     for(size_t i = 0;i < this->num_produce;i++) {
-        std::string str = string("/root/os_project/resource/") + std::to_string(i) + std::string(".avi");
-        cout << "str : " << str << endl;
-        this->produce_list[i] = new std::thread(std::bind(&ThreadManager::Produce, this, (str)));
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::string str = std::string("/root/os_project/resource/") + std::to_string(i) + std::string(".avi");
+        std::string name = std::string("视频源") + std::to_string(i);
+        std::cout << "创建线程id   : " << str << std::endl;
+        std::cout << "创建线程name : " << name << std::endl;
+        this->produce_list[i] = new std::thread(std::bind(&ThreadManager::Produce, this, str, name, this->produce_time)); // 使用默认时间初始化
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
     }
     for(size_t i = 0;i < this->num_consume;i++) {
         this->consume_list[i] = new std::thread(&ThreadManager::Consume, this);
         this->source_name_list.push_back(string("视频源") + to_string(i));
     }
     for(size_t i = 0;i < this->num_sub_consume;i++) {
-        this->sub_consume_list[i] = new std::thread(&ThreadManager::SubConsume, this);
+        this->sub_consume_list[i] = new std::thread(std::bind(&ThreadManager::SubConsume, this, this->sub_consume_time)); // 使用默认延迟时间初始化
     }
     puts("-----------Thread Created------------");
     this->init_draw(argc, argv);
+    this->draw_process = new std::thread(&ThreadManager::DrawProcess, this);
     puts("---------Initialize Finished---------");
     return 0;
 }
@@ -134,12 +140,13 @@ void ThreadManager::run() {
     for(size_t i = 0;i < this->num_sub_consume;i++) {
         this->sub_consume_list[i]->join();
     }
+    this->draw_process->join();
     puts("-----------------end-----------------");
 }
 
 
 // 添加函数
-int addProduce(std::string path) {
+int addProduce(std::string path, int speed) {
     return 0;
 }
 
@@ -148,6 +155,6 @@ int addConsume() {
     return 0;
 }
 
-int addSubConsume() {
+int addSubConsume(int speed) {
     return 0;
 }

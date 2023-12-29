@@ -23,7 +23,7 @@ public:
         std::unique_lock<std::mutex> lck(mtk);
         if (--count < 0)//资源不足挂起线程
             cv.wait(lck);
-    }
+    }   
 
     void signal() {
         std::unique_lock<std::mutex> lck(mtk);

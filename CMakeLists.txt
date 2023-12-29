@@ -21,7 +21,6 @@ include_directories(${OPENGL_INCLUDE_DIR})
 find_package(GLUT REQUIRED)
 include_directories(${GLUT_INCLUDE_DIR})  
 find_package(OpenVINO REQUIRED)
-
 # 加入opencv库
 find_package( OpenCV REQUIRED )
 # 设置一下多线程
@@ -35,6 +34,8 @@ add_executable( os_project
                 RobomasterCode/src/yolov5.cpp
                 RobomasterCode/src/Timer.cpp 
                 RobomasterCode/src/armor_detector.cpp
+                src/UI.cpp
+                GLUI/GL2DUtil.cpp
             )
 
 # 项目内包含库
@@ -42,7 +43,7 @@ include_directories(/root/os_project/include)
 # 项目引入第三方库
 include_directories(/root/os_project/RobomasterCode/include)
 # OpenGL自定义组件库
-include_directories(/root/os_project/GLUI)
+include_directories(/root/os_project/)
 # 动态链接库
 target_link_libraries( os_project 
             ${OpenCV_LIBS}
@@ -52,6 +53,7 @@ target_link_libraries( os_project
             ${GLUT_glut_LIBRARY}
             openvino::runtime
             libpthread.so
+            X11
             )
 # 设置标准属性
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)

@@ -7,6 +7,7 @@
 #define THREADMANAGER_H
 
 #include "semaphore.hpp"
+#include "UI.hpp"
 
 /**
  * 线程管理类
@@ -38,6 +39,10 @@ class ThreadManager{
     */
     std::thread* sub_consume_list[MAX_LIST_SIZE];
     /**
+     * 绘制程序进程
+    */
+    std::thread* draw_process;
+    /**
      * 生产者缓冲区大小
     */
     size_t size_buffer;
@@ -65,10 +70,6 @@ class ThreadManager{
     */
     float sub_consume_time;
     /**
-     * yolov5模型识别器
-    */
-    ArmorDetector *yolo_detector;
-    /**
      * 数据处理器角度解算器
      * 
     */
@@ -81,6 +82,14 @@ class ThreadManager{
      * 视频源id
     */
     std::vector<std::string> source_name_list;
+    /**
+     * 速度map
+    */
+    std::unordered_map<std::string, int> speed_map;
+    /**
+     * 名称map
+    */
+    std::unordered_map<std::string, std::string> name_map;
     public:
     /**
      * 初始化函数
@@ -102,7 +111,7 @@ class ThreadManager{
     /**
      * 生产者线程函数
     */
-    void Produce(std::string path);
+    void Produce(std::string path, std::string name, int speed);
     /**
      * 消费者线程函数
     */
@@ -110,7 +119,7 @@ class ThreadManager{
     /**
      * 次级消费者线程函数
     */
-    void SubConsume();
+    void SubConsume(int speed);
     /**
      * 绘制线程
     */
@@ -121,7 +130,7 @@ class ThreadManager{
     /**
      * 添加生产者
     */
-    int addProduce(std::string path);
+    int addProduce(std::string path, int speed);
     /**
      * 添加消费者
     */
@@ -129,7 +138,7 @@ class ThreadManager{
     /**
      * 添加次级消费者
     */
-    int addSubConsume();
+    int addSubConsume(int speed);
 };
 
 #endif // !THREADMANAGER_H
