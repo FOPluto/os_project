@@ -27,7 +27,6 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat& frame, int t
     std::string res = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
     obj->produce_id = res;
     cv::imshow(res, frame);
-    cv::waitKey(1);
 
     ir->buffer[ir->in] = obj;
     obj->index = ir->in;
