@@ -15,8 +15,11 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat& frame, int t
     auto start_time = std::chrono::system_clock::now();
     
     capture >> frame;
-    // if (!frame.empty()) {
-    // }
+    if (frame.empty()) {
+        ir->mtxL->signal();
+        ir->fullL->signal();
+        return -1;
+    }
     object* obj = new object();
     obj->type = 1; obj->image = frame;
     // 获取当前线程id
@@ -49,7 +52,9 @@ object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* det
 
     auto start_time = std::chrono::system_clock::now();
 
+
     auto *item = ir->buffer[ir->out];
+    
     // 如果为空直接return空指针
     if(item->image.empty()) {
         ir->buffer[ir->out] = nullptr;
