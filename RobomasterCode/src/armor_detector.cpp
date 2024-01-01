@@ -199,8 +199,9 @@ void ArmorDetector::ScreenArmor(){
         //记录输出结果，用于历史帧判断
         record_history_arr.emplace_back(match_armors_[id]);
         // gdb调试出来的一个错误 bt可以查看堆栈
-        while(record_history_arr.size()>record_history_num && record_history_arr.size() > 0) record_history_arr.erase(record_history_arr.begin());
-
+        while(record_history_arr.size() > record_history_num && !record_history_arr.empty())
+            record_history_arr.erase(record_history_arr.begin());
+        // 结果推进去
         target_armor_point_set.clear();
         target_armor_point_set.push_back(lu);
         target_armor_point_set.push_back(ru);

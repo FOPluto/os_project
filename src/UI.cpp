@@ -4,8 +4,8 @@ static float myratio;  // angle绕y轴的旋转角，ratio窗口高宽比
 static float x = 0.0f, y = 0.0f, z = 5.0f;  //相机位置
 static float lx = 0.0f, ly = 0.0f, lz = -1.0f;  //视线方向，初始设为沿着Z轴负方向
 
-const int WIDTH = 1000;
-const int HEIGHT = 1000;
+const int WIDTH = 2000;
+const int HEIGHT = 1280;
 
 const std::string name = "Demo";
 
@@ -22,10 +22,11 @@ bool colorflag;
 std::vector<Slider> vecSlider;
 
 char str[] = "hello";
-Button button(0, 0, str);
+Button button(0, 1.5, str);
 bool stop = false;
 
-
+std::vector<std::string> thread_id;
+std::unordered_map<std::string, int> *thread_speed;
 
 struct bufferObj {
     ItemRepository *ir;
@@ -60,31 +61,38 @@ void initGhd(   std::thread** producers,
                 size_t consume_size,
                 size_t sub_consume_size,
                 ItemRepository * buffer1,
-                ItemRepository * buffer2,
-                std::unordered_map<std::string, int> &speed_map) {
+                std::vector<ItemRepository *> buffer2,
+                std::unordered_map<std::string, int> *speed_map) {
     // 添加框，即缓冲区，为了显示好看，尽量奇数
     // 缓冲区标号、大小，缓冲区摆放位置
-    ghd.push_back(new bufferObj(buffer1, -10 * zoom, 0, 0));
-    ghd.push_back(new bufferObj(buffer2, 10 * zoom, 6 * zoom, 0));
+    ghd.push_back(new bufferObj(buffer1, -15 * zoom, 0, 0));
+    for(size_t i = 0;i < buffer2.size(); i++){
+        ghd.push_back(new bufferObj(buffer2[i], 15 * zoom, -20 * zoom * i + 9 * zoom, 0));
+    }
     // ghd.push_back(new bufferObj(new ItemRepository(3, 5), 10 * zoom, -6 * zoom, 0));
     // 任务，即启动箭头任务
     // 任务名、输入缓冲区，输出缓冲区，速度
     // 延时时间 = 滑动条的值  ms
+    thread_speed = speed_map;
     for(size_t i = 0;i < produce_size;i ++) {
         vt.push_back(producers[i]);
-        vecSlider.emplace_back(-1.5, 1.5 + 0.3 * i, 50, 1, 100);
+        vecSlider.emplace_back(-2.5, -1.2 + 0.3 * i, 50, 1, 1000);
         // 获取对应的线程的id, 并且赋值
-        speed_map[std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id())))] = (int)(vecSlider[i].getVal());
+        (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id())))] = (int)(vecSlider[i].getVal());
+        thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id()))));
     }
-    for(size_t i = 0;i < consume_size;i ++) {
+    for(size_t i = 0;i < consume_size * produce_size;i ++) {
         vt.push_back(consumers[i]);
-        vecSlider.emplace_back(0, 1.5 + 0.3 * i, 50, 1, 100);
+        vecSlider.emplace_back(0, -1.5 + 0.3 * i + (int)(i / consume_size) * 0.3, 50, 1, 1000);
+        thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(consumers[i]->get_id()))));
     }    
-    for(size_t i = 0;i < sub_consume_size;i ++) {
+    // 每个生产者对应一个buffer
+    for(size_t i = 0;i < sub_consume_size * produce_size;i ++) {
         vt.push_back(sub_consumers[i]);
-        vecSlider.emplace_back(1.5, 1.5 + 0.1 * i, 50, 1, 100);
+        vecSlider.emplace_back(2.5, -1.2 + 0.3 * i, 50, 1, 1000);
         // 获取对应的线程的id, 并且赋值
-        speed_map[std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id())))] = (int)(vecSlider[i].getVal());
+        (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id())))] = (int)(vecSlider[i].getVal());
+        thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id()))));
     }
 }
    
@@ -133,7 +141,7 @@ void mouse(int but, int state, int x, int y) {
     if (but == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         for (size_t i = 0; i < vecSlider.size(); i++) {
             vecSlider[i].listen(x, y);
-            vSpeed[i] = (100.0 / vecSlider[i].getVal() * 100);
+            (*thread_speed)[thread_id[i]] = vecSlider[i].getVal();
         }
         if (button.listen(x, y))
             stop = !stop;
@@ -268,8 +276,8 @@ void drawInit(  std::thread** producers,
                 size_t consume_size,
                 size_t sub_consume_size,
                 ItemRepository * buffer1,
-                ItemRepository * buffer2,
-                std::unordered_map<std::string, int> &speed_map) {
+                std::vector<ItemRepository *> buffer2,
+                std::unordered_map<std::string, int> *speed_map) {
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(WIDTH, HEIGHT);
     glutCreateWindow("Demo");  // 改了窗口标题
@@ -341,4 +349,42 @@ void drawInit(  std::thread** producers,
     glRectf(-width * zoom, -height * zoom, width * zoom, height * zoom);
     glPopMatrix();
     glEndList();
+}
+
+// opencv画图像
+void drawImage(const cv::Mat& image, float x, float y, float z) {
+    // 转换图像为 RGBA 格式
+    cv::Mat rgbaImage;
+    cv::cvtColor(image, rgbaImage, cv::COLOR_BGR2RGBA);
+
+    // 创建纹理对象
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // 设置纹理参数
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // 加载图像数据到纹理
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgbaImage.cols, rgbaImage.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbaImage.data);
+
+    // 绘制图像
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glEnable(GL_TEXTURE_2D);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(x + image.cols, y, z);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(x + image.cols, y + image.rows, z);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + image.rows, z);
+    glEnd();
+
+    // 清理
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDeleteTextures(1, &textureID);
+    glDisable(GL_TEXTURE_2D);
 }

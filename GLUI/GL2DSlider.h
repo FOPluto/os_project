@@ -26,7 +26,7 @@ class Slider : public Base {
     float xBlock{};
 
     int val{20};
-    int min{0}, max{100};
+    int min{0}, max{200};
 
     void init() {
         r = g = b = 0.8;

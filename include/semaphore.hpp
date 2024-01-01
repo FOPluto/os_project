@@ -66,9 +66,9 @@ struct ItemRepository {
 
 int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat &frame, int time);
 
-object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time);
+void ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time);
 
-vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
+void SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
 
 void display();
 

@@ -57,10 +57,15 @@ class ThreadManager{
     size_t idx_pro, idx_pro_con,
             idx_con_sub, idx_sub;
     /**
-     * 两个缓冲区 
+     * 缓冲区 
      * 生产者消费者用的缓冲区、消费者和次级消费者用的缓冲区
     */
-    ItemRepository* mat_repository, *data_repository;
+    ItemRepository* mat_repository;
+    /**
+     * 若干个缓冲区
+     * 数个缓冲区
+    */
+    vector<ItemRepository*> data_repository;
     /**
      * 消费者每次运行时间，和速度成反比
     */
@@ -115,11 +120,11 @@ class ThreadManager{
     /**
      * 消费者线程函数
     */
-    void Consume();
+    void Consume(ItemRepository* res_repository);
     /**
      * 次级消费者线程函数
     */
-    void SubConsume(int speed);
+    void SubConsume(int speed, ItemRepository* repository);
     /**
      * 绘制线程
     */

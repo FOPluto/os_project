@@ -44,23 +44,21 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, Mat& frame, int t
 }
 
 // 消费者通用函数
-object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time) {
+void ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time) {
     ir->fullL->wait();
     ir->mtxL->wait();
     // 维持速度
-
     auto start_time = std::chrono::system_clock::now();
-
-
+    // 获得当前指向的item
     auto *item = ir->buffer[ir->out];
-    
     // 如果为空直接return空指针
-    if(item->image.empty()) {
+    if(item == nullptr || item->image.empty()) {
         ir->buffer[ir->out] = nullptr;
         ir->mtxL->signal();
         ir->emptyL->signal();
-        return nullptr;
+        return;
     }
+    // 取出mat
     cv::Mat src_image;
     item->image.copyTo(src_image);
     std::string produce_id = std::string(item->produce_id);
@@ -68,41 +66,41 @@ object *ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* det
     item->index = ir->out;
     ir->out = (ir->out + 1) % ir->BUFFER_SIZE;
     ir->counter--;
-
+    // 解锁一下
     ir->mtxL->signal();
     ir->emptyL->signal();
-
     // 如果有图片，那么传入并且识别
     vector<cv::Point2f> detect_res = detector->DetectObjectArmor(src_image, produce_id);
-    // 处理输出结果 通过item得到最后的识别结果res_item
-
-        
+    // 处理输出结果 通过item得到最后的识别结果res_item        
     object* res_item = new object();
     res_item->type = 2; res_item->data = detect_res;
-    
-
+    // 下一个处理
     res->emptyL->wait();
     res->mtxL->wait();
-    
     // 将输出的结果放到结果队列中
     res->buffer[res->in] = res_item;
     res_item->index = res->in;
     res->in = (res->in + 1) % res->BUFFER_SIZE;
     res->counter++;
-    
-
+    // 打印四个点的位置
+    puts("{");
+    for(int i = 0;i < 4;i++) printf("\tPoint{%f, %f}\n", res_item->data[i].x, res_item->data[i].y);
+    puts("}");
+    // 锁时间
     auto end_time = std::chrono::system_clock::now();
     int sleep_time = time - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
     if (sleep_time > 0) {
         std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
     }
+    // 解锁一下
     res->mtxL->signal();
     res->fullL->signal();
-    return res_item; // 返回产品.
+    // 返回产品地址，但是不要使用，因为怕这个数据被删除
+    return; 
 }
 
 // 次级消费者通用函数
-vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver *solver, int time) {
+void SubConsumeItem(ItemRepository *ir, AngleSolver *solver, int time) {
     ir->fullL->wait();
     ir->mtxL->wait();
     // 维持速度
@@ -115,6 +113,8 @@ vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver *solver, int time)
     item->index = ir->out;
     ir->out = (ir->out + 1) % ir->BUFFER_SIZE;
     ir->counter--;
+
+    printf("result {%f, %f, %f}\n", solver_res[0], solver_res[1], solver_res[2]);
     
     auto end_time = std::chrono::system_clock::now();
     int sleep_time = time - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
@@ -123,7 +123,8 @@ vector<double> SubConsumeItem(ItemRepository *ir, AngleSolver *solver, int time)
     }
     ir->mtxL->signal();
     ir->emptyL->signal();
-    return solver_res; // 返回产品.
+    // 返回产品，最好不要使用，怕其他线程删除
+    return; // 返回产品.
 }
 
 
