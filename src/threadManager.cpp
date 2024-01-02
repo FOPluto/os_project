@@ -10,14 +10,20 @@ void ThreadManager::Produce(std::string path, std::string name, int speed) {
     this->speed_map[current_process_id] = speed;
     cout << path << endl;
     cv::VideoCapture capture = cv::VideoCapture(path);
-    Mat frame;
     if(!capture.isOpened()){
         cout << "视频读取失败，请检查路径" << endl;
         return;
     }
     puts("--------Produce Start Running--------");
     while(1) {
-        if(ProduceItem(this->mat_repository, capture, frame, this->speed_map[current_process_id] * 1e3) == -1) break;
+        //sleep维持速度
+        auto start_time = std::chrono::system_clock::now();
+        if(ProduceItem(this->mat_repository, capture, this->speed_map[current_process_id] * 1e3) == -1) break;
+        auto end_time = std::chrono::system_clock::now();
+        int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+        if (sleep_time > 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
+        }
     }
     puts("视频读取完毕，线程退出");
 }
@@ -39,7 +45,14 @@ void ThreadManager::SubConsume(int speed, ItemRepository* repository) {
     std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
     this->speed_map[current_process_id] = speed;
     while(1) {
+        //sleep维持速度
+        auto start_time = std::chrono::system_clock::now();
         SubConsumeItem(repository, this->solver, this->speed_map[current_process_id] * 1e3);
+        auto end_time = std::chrono::system_clock::now();
+        int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+        if (sleep_time > 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
+        }
     }
 }
 
@@ -105,6 +118,7 @@ int ThreadManager::init(int argc, char** argv) {
         this->data_repository.push_back(new ItemRepository(0, size_sub_buffer));
     }
     // 创建对应数量的进程
+    XInitThreads();
     for(size_t i = 0;i < this->num_produce;i++) {
         this->source_name_list.push_back(string("视频源") + to_string(i));
         std::string str = std::string("/root/os_project/resource/") + std::to_string(i) + std::string(".avi");

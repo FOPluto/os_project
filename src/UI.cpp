@@ -76,20 +76,20 @@ void initGhd(   std::thread** producers,
     thread_speed = speed_map;
     for(size_t i = 0;i < produce_size;i ++) {
         vt.push_back(producers[i]);
-        vecSlider.emplace_back(-2.5, -1.2 + 0.3 * i, 50, 1, 1000);
+        vecSlider.emplace_back(-3.1, -0.27 + 0.5 * i, 50, 1, 1000);
         // 获取对应的线程的id, 并且赋值
         (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id())))] = (int)(vecSlider[i].getVal());
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id()))));
     }
     for(size_t i = 0;i < consume_size * produce_size;i ++) {
         vt.push_back(consumers[i]);
-        vecSlider.emplace_back(0, -1.5 + 0.3 * i + (int)(i / consume_size) * 0.3, 50, 1, 1000);
+        vecSlider.emplace_back(0, 1.1 - 0.3 * i - (int)(i / consume_size) * 0.3, 50, 1, 1000);
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(consumers[i]->get_id()))));
     }    
     // 每个生产者对应一个buffer
     for(size_t i = 0;i < sub_consume_size * produce_size;i ++) {
         vt.push_back(sub_consumers[i]);
-        vecSlider.emplace_back(2.5, -1.2 + 0.3 * i, 50, 1, 1000);
+        vecSlider.emplace_back(3.1, 0.29 - 0.7 * i, 50, 1, 1000);
         // 获取对应的线程的id, 并且赋值
         (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id())))] = (int)(vecSlider[i].getVal());
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id()))));
@@ -198,8 +198,18 @@ void drawSphere(ItemRepository *ir, object *ob, int i) {
     glColor3f(ob->r, ob->g, ob->b);
     glPushMatrix();
     glTranslatef(0, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
-    glutSolidSphere(zoom, 100, 100);
+    if(!ob->image.empty() && ob->type == 1 || !ob->dst_image.empty() && ob->type == 2) {
+        glutSolidSphere(zoom, 100, 100);
+    }
     glPopMatrix();
+    if(ob->type == 1) {
+        if(!ob->image.empty()) drawImage(ob->image, zoom * -2.5, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        if(!ob->dst_image.empty()){
+            drawImage(ob->dst_image, zoom * 1.7, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        } 
+    } else {
+        if(!ob->dst_image.empty()) drawImage(ob->dst_image, zoom * -2.5, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+    }
 }
 
 void drawArrow() {
@@ -236,14 +246,14 @@ void myDisplay() {
         glColor3f(item->r, item->g, item->b);
         {
             glPushMatrix();
-            glTranslatef(-5 * zoom, (int(item->ir->in) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
+            glTranslatef(-5.7 * zoom, (int(item->ir->in) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
             drawArrow();
             glPopMatrix();
         }
         glColor3f(item->r * 0.5, item->g * 0.5, item->b * 0.5);
         {
             glPushMatrix();
-            glTranslatef(5 * zoom, (int(item->ir->out) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
+            glTranslatef(5.5 * zoom, (int(item->ir->out) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
             drawArrow();
             glPopMatrix();
         }
@@ -371,17 +381,27 @@ void drawImage(const cv::Mat& image, float x, float y, float z) {
     // 加载图像数据到纹理
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgbaImage.cols, rgbaImage.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbaImage.data);
 
+    // 保存当前矩阵状态
+    glPushMatrix();
+
+    // 平移和缩放变换
+    glTranslatef(x, y, z);
+    glScalef(image.cols / 2500.0f, image.rows / 2500.0f, 1.0f);  // 缩小2400倍
+
     // 绘制图像
     glBindTexture(GL_TEXTURE_2D, textureID);
     glEnable(GL_TEXTURE_2D);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-    glTexCoord2f(1.0f, 0.0f); glVertex3f(x + image.cols, y, z);
-    glTexCoord2f(1.0f, 1.0f); glVertex3f(x + image.cols, y + image.rows, z);
-    glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + image.rows, z);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, 0.0f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, 0.0f);
     glEnd();
+
+    // 恢复矩阵状态
+    glPopMatrix();
 
     // 清理
     glBindTexture(GL_TEXTURE_2D, 0);

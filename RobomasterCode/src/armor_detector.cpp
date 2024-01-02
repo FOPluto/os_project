@@ -2,6 +2,7 @@
 #include "armor_detector.h"
 #include "angle_solver.h"
 #include  <time.h>
+#include "UI.hpp"
 
 #define DEBUG 1
 
@@ -118,7 +119,6 @@ void ArmorDetector::ScreenArmor(){
     int i=0;//
     for(vector<int>::iterator it=record_history_arr_num.begin();it!=record_history_arr_num.end();it++)
     {if(match_armors_.size()<*it)i++;}
-    if(i>wu_cha_yun_xu*record_history_num)match_armors_.emplace_back(*record_history_arr.end());//duanzan de diushi mu biao rengran jida
 
     if(match_armors_.size() > 0){ // 如果当前帧有检测到目标
             if(match_armors_.size()!=1) // 如果当前帧检测到目标不唯一，则根据多目标优先算法进行排序。
@@ -195,12 +195,9 @@ void ArmorDetector::ScreenArmor(){
         cv::putText(src_image_, match_armors_[id].class_name, origin, cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 1, 2, 0);
 
 #endif
-
-        //记录输出结果，用于历史帧判断
-        record_history_arr.emplace_back(match_armors_[id]);
+        // 这里加一个互斥锁，具体为啥我也不太清楚
         // gdb调试出来的一个错误 bt可以查看堆栈
-        while(record_history_arr.size() > record_history_num && !record_history_arr.empty())
-            record_history_arr.erase(record_history_arr.begin());
+        std::unique_lock<std::mutex> lck(this->mtx);
         // 结果推进去
         target_armor_point_set.clear();
         target_armor_point_set.push_back(lu);
@@ -229,24 +226,25 @@ void ArmorDetector::ClearAll(){
 /**
  * @brief 展示结果
 */
-void ArmorDetector::Show(double y_err,double p_err)
-{
-    String s="yaw:"+to_string(y_err)+",pitch:"+to_string(p_err);
-    putText(src_image_,s,Point(100,100),FONT_HERSHEY_SIMPLEX,1,Scalar(255,255,255),2);
-    imshow("src",src_image_);
-    ofstream out1;
-      out1.open("/home/robomaster/qt_workspace/1.txt",ios::app);
-      out1<<to_string(y_err)+","+to_string(p_err)<<endl;
-      out1.close();
-}
 void ArmorDetector::Show(std::string& produce_id){
-#ifdef DEBUG
     // 获取当前线程id
     std::thread::id id = std::this_thread::get_id();
     std::string str = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
-    cv::imshow(string("消费者处理") + produce_id,src_image_);
-    waitKey(1);
-#endif
+   // 每次imshow之前都需要创建一下，因为这一段imshow代码不能保证线程安全
+    
+    // try {
+    //     /* code */
+    //     cv::imshow(string("消费者处理") + produce_id,src_image_);
+    //     cv::waitKey(1); // wait长一点才能防止异常
+    // } catch(const std::exception& e) {
+    //     std::cerr << e.what() << '\n';
+    // }
+    // 弃用。imshow在多线程中不安全
+
+
+    // 本函数有待优化
+    //drawImage(src_image_, 0, 0, 0);
+
 }
 
 /**
@@ -265,14 +263,14 @@ void ArmorDetector::Yolov2Res(cv::Mat &frame){
  * @brief 在初始化之后，每一次加载图片之后就执行一次识别过程，返回最终中心点坐标
 */
 #include<thread>
-vector<Point2f>& ArmorDetector::DetectObjectArmor(cv::Mat& frame, std::string& produce_id){
+pair<std::vector<cv::Point2f>, cv::Mat> ArmorDetector::DetectObjectArmor(cv::Mat& frame, std::string& produce_id){
     // old detector 老视觉识别已经弃用，现在用的深度学习识别
     src_image_ = cv::Mat::zeros(frame.size(), frame.type());
     Yolov2Res(frame);                   // 调用yolo模型
     ScreenArmor();                 // 使用原来的装甲板筛选代码
     ClearAll();                    // 清除历史工作数据
-    Show(produce_id);
-    return target_armor_point_set; // 返回中心点的信息
+    // Show(produce_id);
+    return {target_armor_point_set, this->src_image_}; // 返回中心点的信息
 }
 
 /**

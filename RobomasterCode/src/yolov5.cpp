@@ -374,8 +374,3 @@ vector<DetectRect>& Yolov5::detect_yolov5(cv::Mat src_){
     // 优化改成
     return infer2res(src_); // 添加到qt项目中不需要copy
 }
-
-
-void Yolov5::show_res(){
-    cv::imshow(WINDOW_NAME, this->m_src_copy_image);
-}

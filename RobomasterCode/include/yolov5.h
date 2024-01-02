@@ -90,8 +90,6 @@ class Yolov5{
 
     vector<DetectRect>& detect_yolov5(cv::Mat src_);   // detect function
 
-    void show_res();
-
     private:
 
     std::vector<DetectRect>& infer2res(cv::Mat& src_);      // Mat yuchuli

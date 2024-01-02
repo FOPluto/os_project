@@ -27,20 +27,23 @@ class ArmorDetector
 public:
     friend cv::VideoWriter;
     ArmorDetector();
-    vector<cv::Point2f>& DetectObjectArmor(cv::Mat& frame, std::string& produce_id);
+    pair<std::vector<cv::Point2f>, cv::Mat> DetectObjectArmor(cv::Mat& frame, std::string& produce_id);
     void Yolov2Res(cv::Mat &frame);
     void InitArmor(std::string xml_path, std::string bin_path);
 
     void ScreenArmor();
     void ClearAll();
     void Show(std::string &produce_id);
-    void Show(double y_err,double p_err);
     void baocun();
     void PerspectiveTransformation();
     cv::RotatedRect boundingRRect(const cv::RotatedRect & left, const cv::RotatedRect & right);
     cv::VideoWriter writer;
 
 private:
+
+    std::mutex mtx;
+    std::mutex in_mtx;
+    std::mutex imshow_mtx;
 
     Yolov5* yolov5_detector_;                                                     // yolox识别器
     std::vector<DetectRect> detect_res_armor_;                                    // yolox模型识别到的框，所有信息整合到了DetectRect结构体

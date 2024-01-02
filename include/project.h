@@ -15,9 +15,20 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <X11/Xlib.h>
-#include <time.h>
+#include <opencv2/dnn.hpp>
+#include <opencv2/aruco.hpp>
+#include <fstream>
+#include <thread>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <inference_engine.hpp>
+#include <chrono>
+#include <deque>
+#include <queue>
+#include <exception>
 #include <unordered_map>
+#include <X11/Xlib.h>
 // 最大列表长度
 #define MAX_LIST_SIZE 1000
 // 默认读取的配置文件
@@ -34,6 +45,7 @@ struct object
     size_t index; // 索引
     std::vector<cv::Point2f> data; // 数据
     cv::Mat image; // 输入的图像
+    cv::Mat dst_image; // 输出的图像
     std::string produce_id; // 所属的名称
     float r{}, g{}, b{}; // 之后画球的时候用的颜色
     /* data */
