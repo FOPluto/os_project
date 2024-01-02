@@ -23,7 +23,7 @@ MyPos screen2world(int x, int y);
 // ASCII字符总共只有0到127，一共128种字符
 #define MAX_CHAR 128
 
-void drawString(const char *str);
+void drawString(std::string str);
 
 
 #endif //OPENGLGAME_GL2DUTIL_H

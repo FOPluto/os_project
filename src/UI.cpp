@@ -24,6 +24,7 @@ std::vector<Slider> vecSlider;
 char str[] = "hello";
 Button button(0, 1.5, str);
 bool stop = false;
+bool has_stop = false;
 
 std::vector<std::string> thread_id;
 std::unordered_map<std::string, int> *thread_speed;
@@ -76,20 +77,21 @@ void initGhd(   std::thread** producers,
     thread_speed = speed_map;
     for(size_t i = 0;i < produce_size;i ++) {
         vt.push_back(producers[i]);
-        vecSlider.emplace_back(-3.1, -0.27 + 0.5 * i, 50, 1, 1000);
+        vecSlider.emplace_back(-3.1, -0.27 + 0.5 * i, 100, 1, 600);
         // 获取对应的线程的id, 并且赋值
         (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id())))] = (int)(vecSlider[i].getVal());
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(producers[i]->get_id()))));
     }
     for(size_t i = 0;i < consume_size * produce_size;i ++) {
         vt.push_back(consumers[i]);
-        vecSlider.emplace_back(0, 1.1 - 0.3 * i - (int)(i / consume_size) * 0.3, 50, 1, 1000);
+        vecSlider.emplace_back(0, 1.1 - 0.3 * i - (int)(i / consume_size) * 0.3, 100, 1, 600);
+        (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(consumers[i]->get_id())))] = (int)(vecSlider[i].getVal());
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(consumers[i]->get_id()))));
     }    
     // 每个生产者对应一个buffer
     for(size_t i = 0;i < sub_consume_size * produce_size;i ++) {
         vt.push_back(sub_consumers[i]);
-        vecSlider.emplace_back(3.1, 0.29 - 0.7 * i, 50, 1, 1000);
+        vecSlider.emplace_back(3.1, 0.29 - 0.7 * i, 100, 1, 600);
         // 获取对应的线程的id, 并且赋值
         (*speed_map)[std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id())))] = (int)(vecSlider[i].getVal());
         thread_id.push_back(std::string(std::to_string(std::hash<std::thread::id>{}(sub_consumers[i]->get_id()))));
@@ -194,7 +196,7 @@ void processSpecialKeys(int key, int x, int y) {
     }
 }
 
-void drawSphere(ItemRepository *ir, object *ob, int i) {
+void drawSphere(ItemRepository *ir, std::shared_ptr<object>& ob, int i) {
     glColor3f(ob->r, ob->g, ob->b);
     glPushMatrix();
     glTranslatef(0, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
@@ -203,12 +205,15 @@ void drawSphere(ItemRepository *ir, object *ob, int i) {
     }
     glPopMatrix();
     if(ob->type == 1) {
-        if(!ob->image.empty()) drawImage(ob->image, zoom * -2.5, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
-        if(!ob->dst_image.empty()){
-            drawImage(ob->dst_image, zoom * 1.7, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
-        } 
+        if(!ob->image.empty()) drawImage(ob->image, zoom * -2.8, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        // if(!ob->dst_image.empty()){
+        //     drawImage(ob->dst_image, zoom * 2.1, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        // } 
     } else {
         if(!ob->dst_image.empty()) drawImage(ob->dst_image, zoom * -2.5, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        if(!ob->res_image.empty()) {
+            drawImage(ob->res_image, zoom * 2.1, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
+        }
     }
 }
 
@@ -239,21 +244,20 @@ void myDisplay() {
         glPushMatrix();
         glTranslatef(item->x, item->y, item->z);
         for (size_t i = 0; i < item->ir->BUFFER_SIZE; i++) {
-            object *ob = item->ir->buffer[i];
-            if (ob) drawSphere(item->ir, item->ir->buffer[i], ob->index);
+            if (item->ir->buffer[i].get()) drawSphere(item->ir, item->ir->buffer[i], item->ir->buffer[i]->index);
         }
 
         glColor3f(item->r, item->g, item->b);
         {
             glPushMatrix();
-            glTranslatef(-5.7 * zoom, (int(item->ir->in) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
+            glTranslatef(-6.1 * zoom, (int(item->ir->in) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
             drawArrow();
             glPopMatrix();
         }
         glColor3f(item->r * 0.5, item->g * 0.5, item->b * 0.5);
         {
             glPushMatrix();
-            glTranslatef(5.5 * zoom, (int(item->ir->out) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
+            glTranslatef(5 * zoom, (int(item->ir->out) - int(item->ir->BUFFER_SIZE) / 2) * zoom * 2, 0);
             drawArrow();
             glPopMatrix();
         }
@@ -269,9 +273,21 @@ void myDisplay() {
 }
 
 void myIdle(int i) {
+    // 判断是否暂停
+    if(!has_stop) { // 假如没有暂停
+        if(stop) { // 但是需要暂停
+            for (auto &item:ghd) item->ir->stop->wait();
+            has_stop = true;
+        }
+    } else {
+        if(!stop) {
+            for (auto &item:ghd) item->ir->stop->signal();
+            has_stop = false;
+        }
+    }
+
     for (auto &item:ghd) item->ir->mtxL->wait();
-    // 调试用的
-    // std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+
     myDisplay();
     
     for (auto &item:ghd) item->ir->mtxL->signal();
@@ -362,7 +378,7 @@ void drawInit(  std::thread** producers,
 }
 
 // opencv画图像
-void drawImage(const cv::Mat& image, float x, float y, float z) {
+void drawImage(const cv::Mat image, float x, float y, float z) {
     // 转换图像为 RGBA 格式
     cv::Mat rgbaImage;
     cv::cvtColor(image, rgbaImage, cv::COLOR_BGR2RGBA);

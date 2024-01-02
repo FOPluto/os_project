@@ -47,7 +47,8 @@ void ThreadManager::SubConsume(int speed, ItemRepository* repository) {
     while(1) {
         //sleep维持速度
         auto start_time = std::chrono::system_clock::now();
-        SubConsumeItem(repository, this->solver, this->speed_map[current_process_id] * 1e3);
+        cv::Mat result_mat = SubConsumeItem(repository, this->solver, this->speed_map[current_process_id] * 1e3);
+        
         auto end_time = std::chrono::system_clock::now();
         int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
         if (sleep_time > 0) {

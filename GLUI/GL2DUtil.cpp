@@ -27,7 +27,7 @@ MyPos screen2world(int x, int y) {
 // ASCII字符总共只有0到127，一共128种字符
 #define MAX_CHAR 128
 
-void drawString(const char *str) {
+void drawString(string str) {
     static int isFirstCall = 1;
     static GLuint lists;
 
@@ -56,6 +56,6 @@ void drawString(const char *str) {
         }
     }
     // 调用每个字符对应的显示列表，绘制每个字符
-    for (; *str != '\0'; ++str)
-        glCallList(lists + *str);
+    for (int i = 0; i < str.size(); ++i)
+        glCallList(lists + str[i]);
 }

@@ -31,6 +31,6 @@ void drawInit(  std::thread** producers,
                 std::vector<ItemRepository *> buffer2,
                 std::unordered_map<std::string, int> *speed_map);
 
-void drawImage(const cv::Mat& image, float x, float y, float z);
+void drawImage(const cv::Mat image, float x, float y, float z);
 
 #endif // !UI_H

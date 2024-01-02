@@ -37,23 +37,25 @@ public:
 struct ItemRepository {
     int index;
     size_t BUFFER_SIZE; // Item buffer size.
-    object **buffer; // 产品缓冲区
+    std::shared_ptr<object>* buffer; // 产品缓冲区
     size_t out = 0; // 消费者读取产品位置.
     size_t in = 0; // 生产者写入产品位置.
     size_t counter = 0; // 当前容量
     semaphore *mtxL;
     semaphore *emptyL;
     semaphore *fullL;
+    semaphore *stop;
 
     ItemRepository() {
 
     }
 
     ItemRepository(int index, size_t bufferSize) : index(index), BUFFER_SIZE(bufferSize) {
-        buffer = new object *[BUFFER_SIZE]();
+        buffer = new std::shared_ptr<object> [BUFFER_SIZE]();
         emptyL = new semaphore(bufferSize);
         fullL = new semaphore(0);
         mtxL = new semaphore();
+        stop = new semaphore(); // 一开始都放行
     }
 
     virtual ~ItemRepository() {
@@ -61,6 +63,7 @@ struct ItemRepository {
         delete mtxL;
         delete emptyL;
         delete fullL;
+        delete stop;
     }
 };
 
@@ -68,12 +71,14 @@ int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, int time);
 
 void ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time);
 
-void SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
+cv::Mat SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
 
 void display();
 
 void reshape(int width, int height);
 
 void keyboard(unsigned char key, int x, int y);
+
+cv::Mat visualizeXYZ(double x, double y, double z);
 
 #endif // !SEMAPHORE_H

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--2022ysu-eagle 多线程部分参数调整-->
 <opencv_storage>
-<num_produce>2</num_produce><!--生产者数量-->
+<num_produce>3</num_produce><!--生产者数量-->
 <num_consume>4</num_consume><!--消费者数量-->
 <num_sub_consume>1</num_sub_consume><!--次级消费者数量-->
 <size_buffer>15</size_buffer><!--生产者缓冲区大小-->

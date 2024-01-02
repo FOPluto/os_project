@@ -46,6 +46,8 @@ struct object
     std::vector<cv::Point2f> data; // 数据
     cv::Mat image; // 输入的图像
     cv::Mat dst_image; // 输出的图像
+    cv::Mat res_image; // 最终位置图
+    std::string result;
     std::string produce_id; // 所属的名称
     float r{}, g{}, b{}; // 之后画球的时候用的颜色
     /* data */
