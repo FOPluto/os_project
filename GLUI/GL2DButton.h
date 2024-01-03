@@ -46,11 +46,11 @@ public:
 
     void draw() override {
         // TODO
-       glPushMatrix();
-       glColor3f(1.0f, 0.0f, 0.0f);
-       glRasterPos2f(0.0f, 0.0f);
-       drawString(str);
-       glPopMatrix();
+        glPushMatrix();
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glRasterPos2f(0.0f, 0.0f);
+        drawString(str);
+        glPopMatrix();
 
         // 块绘制
         glPushMatrix();

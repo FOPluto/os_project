@@ -29,7 +29,8 @@ void drawInit(  std::thread** producers,
                 size_t sub_consume_size,
                 ItemRepository * buffer1,
                 std::vector<ItemRepository *> buffer2,
-                std::unordered_map<std::string, int> *speed_map);
+                std::unordered_map<std::string, int> *speed_map,
+                res_data * res);
 
 void drawImage(const cv::Mat image, float x, float y, float z);
 

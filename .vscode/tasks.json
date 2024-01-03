@@ -28,7 +28,10 @@
             "label": "make",
             "type": "shell",
             "command": "make",
-            "args": [],
+            "args": [
+                "-j",
+                "8"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -36,6 +39,10 @@
             "options": {
                 "cwd": "${workspaceFolder}/build",
             },
+            // "args": [
+            //     "-j",
+            //     "4"
+            // ],
             "dependsOn": [
                 "cmake" //make命令执行前先执行cmake命令
             ]

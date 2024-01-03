@@ -5,7 +5,17 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
+#include <QMainWindow>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QtWidgets>
+#include <QApplication>
+#include <QStackedWidget>
+#include <QPushButton>
 #include <GL/glut.h>
+#include <GL/gl.h>
+#include <GL/freeglut.h>
+#include <GL/glu.h>
 #include <vector>
 #include <ctime>
 #include <iostream>
@@ -28,7 +38,10 @@
 #include <queue>
 #include <exception>
 #include <unordered_map>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <X11/Xlib.h>
+
 // 最大列表长度
 #define MAX_LIST_SIZE 1000
 // 默认读取的配置文件
@@ -38,6 +51,9 @@
 
 using namespace cv;
 using namespace std;
+
+static int g_num_waiting = 0;
+
 // 存储变量的object
 struct object
 {
@@ -56,7 +72,30 @@ struct object
         g = rand() % 10 / 10.0;
         b = rand() % 10 / 10.0;
     }
+};
 
+struct res_data {
+public:
+    bool shut_down;
+    int *num_waiting;
+    std::thread **produce_list;
+    std::thread **consume_list;
+    std::thread **sub_consume_list;
+    long long int *runtime;
+    size_t *num_produce;
+    size_t *num_consume;
+    size_t *num_sub_consume;
+    std::unordered_map<std::string, int>* speed_map;
+
+    res_data(bool flag = false) {
+        this->shut_down = flag;
+    }
+};
+
+// 用于提前设置参数的结构体
+struct set_data
+{
+    /* data */
 };
 
 

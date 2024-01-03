@@ -22,13 +22,19 @@ public:
     void wait() {
         std::unique_lock<std::mutex> lck(mtk);
         if (--count < 0)//资源不足挂起线程
+        {
             cv.wait(lck);
+            g_num_waiting ++;
+        }    
     }   
 
     void signal() {
         std::unique_lock<std::mutex> lck(mtk);
         if (++count <= 0)//有线程挂起，唤醒一个
+        {
             cv.notify_one();
+            g_num_waiting --;
+        }    
     }
 };
 
@@ -67,11 +73,11 @@ struct ItemRepository {
     }
 };
 
-int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, int time);
+int ProduceItem(ItemRepository *ir, cv::VideoCapture& capture, int time, bool& flag);
 
-void ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time);
+void ConsumeItem(ItemRepository *ir, ItemRepository * res, ArmorDetector* detector, int time, bool &flag);
 
-cv::Mat SubConsumeItem(ItemRepository *ir, AngleSolver* solver, int time);
+void SubConsumeItem(ItemRepository *ir, AngleSolver * solver, int time, bool& flag);
 
 void display();
 

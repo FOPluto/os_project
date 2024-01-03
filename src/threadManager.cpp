@@ -3,39 +3,54 @@
 */
 #include "threadManager.hpp"
 
+// 关机键
+res_data * g_shutdown;
+
+
 void ThreadManager::Produce(std::string path, std::string name, int speed) {
     // 初始化速度
     std::thread::id id = std::this_thread::get_id();
     std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
     this->speed_map[current_process_id] = speed;
-    cout << path << endl;
+    cout << path << "|" << name << endl;
     cv::VideoCapture capture = cv::VideoCapture(path);
     if(!capture.isOpened()){
         cout << "视频读取失败，请检查路径" << endl;
         return;
     }
     puts("--------Produce Start Running--------");
-    while(1) {
+    while(!g_shutdown->shut_down) {
         //sleep维持速度
         auto start_time = std::chrono::system_clock::now();
-        if(ProduceItem(this->mat_repository, capture, this->speed_map[current_process_id] * 1e3) == -1) break;
+        if(ProduceItem(this->mat_repository, capture, this->speed_map[current_process_id] * 1e3, g_shutdown->shut_down) == -1) break;
         auto end_time = std::chrono::system_clock::now();
         int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
         if (sleep_time > 0) {
             std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
         }
     }
-    puts("视频读取完毕，线程退出");
+    puts("线程退出");
 }
 
 void ThreadManager::Consume(ItemRepository* res_repository) {
     puts("--------Consume Start Running--------");
+    // 初始化速度
+    std::thread::id id = std::this_thread::get_id();
+    std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
+    this->speed_map[current_process_id] = 0;
     ArmorDetector * detector = new ArmorDetector();
     detector->InitArmor(this->xml_path, this->bin_path);
-    while(1) { // 消费者无需控制速度，所以设置为0
-        ConsumeItem(this->mat_repository, res_repository, detector, 0);
+    while(!g_shutdown->shut_down) { // 消费者无需控制速度，所以设置为0
+        auto start_time = std::chrono::system_clock::now();
+        ConsumeItem(this->mat_repository, res_repository, detector, this->speed_map[current_process_id] * 1e3, g_shutdown->shut_down);
+        auto end_time = std::chrono::system_clock::now();
+        int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+        if (sleep_time > 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
+        }
     }
     delete(detector);
+    puts("线程退出");
 }
 
 void ThreadManager::SubConsume(int speed, ItemRepository* repository) {
@@ -44,23 +59,26 @@ void ThreadManager::SubConsume(int speed, ItemRepository* repository) {
     std::thread::id id = std::this_thread::get_id();
     std::string current_process_id = std::string(std::to_string(std::hash<std::thread::id>{}(id)));
     this->speed_map[current_process_id] = speed;
-    while(1) {
+    while(!g_shutdown->shut_down) {
         //sleep维持速度
         auto start_time = std::chrono::system_clock::now();
-        cv::Mat result_mat = SubConsumeItem(repository, this->solver, this->speed_map[current_process_id] * 1e3);
-        
+        SubConsumeItem(repository, this->solver, this->speed_map[current_process_id] * 1e3, g_shutdown->shut_down);
+
         auto end_time = std::chrono::system_clock::now();
         int sleep_time = this->speed_map[current_process_id] * 1e3 - (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
         if (sleep_time > 0) {
             std::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
         }
     }
+    puts("线程退出");
 }
 
 void ThreadManager::DrawProcess() {
     puts("------DrawProcess Start Running------");
     glutMainLoop(); // 进入绘制循环
+    
 }
+
 
 // 初始化绘制函数
 void ThreadManager::init_draw(int argc, char** argv) {
@@ -68,21 +86,32 @@ void ThreadManager::init_draw(int argc, char** argv) {
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
     drawInit(this->produce_list, this->consume_list, this->sub_consume_list,
             this->num_produce, this->num_consume, this->num_sub_consume, 
-            this->mat_repository, this->data_repository, &this->speed_map);
+            this->mat_repository, this->data_repository, &this->speed_map, g_shutdown);
 }
 
 
-int ThreadManager::init(int argc, char** argv) {
+res_data * ThreadManager::init(
+                int produce_number, 
+                int produce_time, 
+                int consume_number, 
+                int consume_time, 
+                int sub_consume_number, 
+                int sub_consume_time, 
+                int mat_buffer_size,
+                int data_buffer_size,
+                std::string xml_path = DEFUALT_XML_PATH,
+                int argc = 0, char** argv = nullptr
+        ) {
+    g_shutdown = new res_data(false);
     puts("--------Starting Initializing--------");
     // 使用配置文件读取参数 修改参数方便，并且避免耦合性
-    std::string xml_path = DEFUALT_XML_PATH; // 定义在project.h的宏
     cv::FileStorage fr;
     fr.open(xml_path,cv::FileStorage::READ);
     while(!fr.isOpened()){
         std::cout << "armor_xml floading failed..." << std::endl;
         fr=cv::FileStorage(xml_path, cv::FileStorage::READ);
         fr.open(xml_path, cv::FileStorage::READ);
-        return -1;
+        return nullptr;
     }
     // 读取对应的数据
     float temp; // 临时变量一个
@@ -110,6 +139,24 @@ int ThreadManager::init(int argc, char** argv) {
     // 初始化角度解算器
     this->solver = new AngleSolver();
     this->solver->InitAngle();
+
+    // 上面是默认参数，下面是用户传入参数
+    this->num_produce = produce_number;
+    this->num_consume = consume_number;
+    this->num_sub_consume = sub_consume_number;
+    if(mat_buffer_size > 3 && mat_buffer_size < 30) this->size_buffer = mat_buffer_size;
+    if(data_buffer_size > 3 && data_buffer_size < 30) this->size_sub_buffer = data_buffer_size;
+
+    // 初始化监控指针
+    g_shutdown->num_waiting = &g_num_waiting;
+    g_shutdown->produce_list = this->produce_list;
+    g_shutdown->consume_list = this->consume_list;
+    g_shutdown->sub_consume_list = this->sub_consume_list;
+    g_shutdown->runtime = &this->runtime;
+    g_shutdown->num_produce = &this->num_produce;
+    g_shutdown->num_consume = &this->num_consume;
+    g_shutdown->num_sub_consume = &this->num_sub_consume;
+    g_shutdown->speed_map = &this->speed_map;
 
     puts("--------Reading data Finished--------");
     // new一个buffer区域，这个是两个结构体，用于管理buffer区域
@@ -143,7 +190,7 @@ int ThreadManager::init(int argc, char** argv) {
     this->init_draw(argc, argv);
     this->draw_process = new std::thread(&ThreadManager::DrawProcess, this);
     puts("---------Initialize Finished---------");
-    return 0;
+    return g_shutdown;
 }
 
 void ThreadManager::run() {

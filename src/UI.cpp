@@ -1,11 +1,13 @@
 #include "UI.hpp"
 
 static float myratio;  // angle绕y轴的旋转角，ratio窗口高宽比
-static float x = 0.0f, y = 0.0f, z = 5.0f;  //相机位置
+static float x = 0.0f, y = 0.0f, z = 5.2f;  //相机位置
 static float lx = 0.0f, ly = 0.0f, lz = -1.0f;  //视线方向，初始设为沿着Z轴负方向
 
 const int WIDTH = 2000;
 const int HEIGHT = 1280;
+
+int windowId; // 保存窗口的标识符
 
 const std::string name = "Demo";
 
@@ -22,10 +24,19 @@ bool colorflag;
 std::vector<Slider> vecSlider;
 
 char str[] = "hello";
-Button button(0, 1.5, str);
+Button button(-0.7, 1.5, str);
+Button button_close(0.7, 1.5, str);
 bool stop = false;
 bool has_stop = false;
 
+// 字体相关
+FT_Library ft;
+FT_Face face;
+
+std::mutex mtx;
+
+// 代表当前生产者消费者模型运行的状态，方便之后的显示和最后的输出
+res_data * result_info;
 std::vector<std::string> thread_id;
 std::unordered_map<std::string, int> *thread_speed;
 
@@ -68,7 +79,7 @@ void initGhd(   std::thread** producers,
     // 缓冲区标号、大小，缓冲区摆放位置
     ghd.push_back(new bufferObj(buffer1, -15 * zoom, 0, 0));
     for(size_t i = 0;i < buffer2.size(); i++){
-        ghd.push_back(new bufferObj(buffer2[i], 15 * zoom, -20 * zoom * i + 9 * zoom, 0));
+        ghd.push_back(new bufferObj(buffer2[i], 15 * zoom, 9 * zoom - i * 2.5 * zoom * buffer2[i]->BUFFER_SIZE, 0));
     }
     // ghd.push_back(new bufferObj(new ItemRepository(3, 5), 10 * zoom, -6 * zoom, 0));
     // 任务，即启动箭头任务
@@ -137,6 +148,39 @@ void moveMeFlat(int direction) {
 }
 
 /**
+ * 保存日志函数
+*/
+void writeLogToXml()
+{
+    // 获取当前时间
+    std::time_t currentTime = std::time(nullptr);
+
+    // 使用当前时间生成文件名
+    std::tm* localTime = std::localtime(&currentTime);
+    char filename[100];
+    std::strftime(filename, sizeof(filename), "%Y-%m-%d_%H-%M-%S.xml", localTime);
+
+    // 创建 FileStorage 对象并打开文件
+    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+
+    if (fs.isOpened())
+    {
+        // 写入日志内容
+        fs << "log" << "This is a log message.";
+
+        // 关闭文件
+        fs.release();
+        std::cout << "Log file saved: " << filename << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to open log file." << std::endl;
+    }
+}
+
+
+
+/**
  * 鼠标事件
 */
 void mouse(int but, int state, int x, int y) {
@@ -147,6 +191,27 @@ void mouse(int but, int state, int x, int y) {
         }
         if (button.listen(x, y))
             stop = !stop;
+        if (button_close.listen(x, y)) {
+            // 改变全局控制变量
+            //最后再运行一下就可以停止了
+            for(auto & item : ghd) {
+                item->ir->stop->signal();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            // 保存对应的日志
+            writeLogToXml();
+            for(auto & item : ghd) {
+                item->ir->stop->signal();
+                item->ir->mtxL->signal();
+                item->ir->fullL->signal();
+                item->ir->emptyL->signal(); // 全部解锁
+            }
+            result_info->shut_down = true;
+            // 等待50ms再结束，防止异常
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+            return;
+        }
     }
     if (but == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
 
@@ -204,6 +269,7 @@ void drawSphere(ItemRepository *ir, std::shared_ptr<object>& ob, int i) {
         glutSolidSphere(zoom, 100, 100);
     }
     glPopMatrix();
+    std::lock_guard<std::mutex> lock(mtx);
     if(ob->type == 1) {
         if(!ob->image.empty()) drawImage(ob->image, zoom * -2.8, (i - int(ir->BUFFER_SIZE) / 2) * zoom * 2, zoom);
         // if(!ob->dst_image.empty()){
@@ -217,6 +283,9 @@ void drawSphere(ItemRepository *ir, std::shared_ptr<object>& ob, int i) {
     }
 }
 
+
+
+
 void drawArrow() {
     glTranslatef(0, 0, zoom);
     glRotatef(90, 0.0f, 1.0f, 0.0f);
@@ -224,12 +293,19 @@ void drawArrow() {
 }
 
 void myDisplay() {
+    if(result_info->shut_down){
+        thread_id.clear();
+        vecSlider.clear();
+        ghd.clear();
+        vt.clear();
+        glutLeaveMainLoop();
+    } 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     gluLookAt(x, y, z, x + lx, y + ly, z + lz, 0.0f, 1.0f, 0.0f);
 
     // 实现鼠标旋转的核心
-    glRotatef(xrot, 1.0f, 0.0f, 0.0f);
+    glRotatef(xrot, 1.5f, 0.0f, 0.0f);
     glRotatef(yrot, 0.0f, 1.0f, 0.0f);
 
     for (auto &slider:vecSlider) {
@@ -238,6 +314,11 @@ void myDisplay() {
         glPopMatrix();
     }
     button.draw();
+    button_close.draw();
+
+    // 绘制文本
+    drawString("number of waiting thread: " + std::to_string(g_num_waiting));
+
 
     // 绘制球
     for (auto &item:ghd) {
@@ -295,6 +376,7 @@ void myIdle(int i) {
 }
 
 
+
 void drawInit(  std::thread** producers, 
                 std::thread** consumers,
                 std::thread** sub_consumers,
@@ -303,11 +385,13 @@ void drawInit(  std::thread** producers,
                 size_t sub_consume_size,
                 ItemRepository * buffer1,
                 std::vector<ItemRepository *> buffer2,
-                std::unordered_map<std::string, int> *speed_map) {
+                std::unordered_map<std::string, int> *speed_map,
+                res_data* res) {
+    result_info = res;
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(WIDTH, HEIGHT);
-    glutCreateWindow("Demo");  // 改了窗口标题
-
+    windowId = glutCreateWindow("Demo");  // 改了窗口标题
+    glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS ); 
     glutDisplayFunc(myDisplay);
 //    glutIdleFunc(myIdle);  // 表示在CPU空闲的时间调用某一函数
     glutTimerFunc(20, myIdle, 1);

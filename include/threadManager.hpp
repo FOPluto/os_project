@@ -6,7 +6,6 @@
 #ifndef THREADMANAGER_H
 #define THREADMANAGER_H
 
-#include "semaphore.hpp"
 #include "UI.hpp"
 
 /**
@@ -95,11 +94,26 @@ class ThreadManager{
      * 名称map
     */
     std::unordered_map<std::string, std::string> name_map;
+    /**
+     * 运行时间
+    */
+    long long int runtime;
     public:
     /**
-     * 初始化函数
+     * 初始化函数 返回一个监视器
     */
-    int init(int argc, char** argv);
+    res_data * init(   
+                int produce_number, 
+                int produce_time, 
+                int consume_number, 
+                int consume_time, 
+                int sub_consume_number, 
+                int sub_consume_time, 
+                int mat_buffer_size,
+                int data_buffer_size,
+                std::string xml_path,
+                int argc, char** argv
+            );
     /**
      * 执行函数
     */
